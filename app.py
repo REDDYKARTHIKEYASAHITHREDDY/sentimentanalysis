@@ -1,152 +1,113 @@
 import streamlit as st
+import pandas as pd
+from textblob import TextBlob
 from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
-import time
-import random
+import matplotlib.pyplot as plt
 
-# Initialize VADER
-analyzer = SentimentIntensityAnalyzer()
+st.set_page_config(page_title="💬 Sentiment Analyzer", layout="wide")
 
-# App UI Setup
-st.set_page_config(
-    page_title="🚀 Sentiment Analyzer",
-    page_icon="🤖",
-    layout="wide"
-)
+@st.cache_resource
+def load_sentiment_tool():
+    return SentimentIntensityAnalyzer()
 
-# Custom CSS with animation styles
-st.markdown("""
-<style>
-    .positive { color: #2ecc71; font-size: 24px; font-weight: bold; }
-    .negative { color: #e74c3c; font-size: 24px; font-weight: bold; }
-    .neutral { color: #95a5a6; font-size: 24px; font-weight: bold; }
-    .header { font-size: 32px !important; color: #3498db; }
+sentiment_tool = load_sentiment_tool()
 
-    /* Neutral animation */
-    @keyframes float {
-        0% { transform: translateY(0px); }
-        50% { transform: translateY(-20px); }
-        100% { transform: translateY(0px); }
-    }
-    .neutral-emoji {
-        animation: float 3s ease-in-out infinite;
-        display: inline-block;
-    }
+st.title("💬 Sentiment Analyzer")
+st.caption("Understand how your words feel — individually or across entire datasets.")
 
-    /* Analyze button styling */
-    .stButton>button {
-        width: 100%;
-        transition: all 0.3s;
-    }
-    .stButton>button:hover {
-        transform: scale(1.02);
-    }
-</style>
-""", unsafe_allow_html=True)
-
-# Initialize session state
-if 'input_text' not in st.session_state:
-    st.session_state.input_text = ""
-if 'analyze_clicked' not in st.session_state:
-    st.session_state.analyze_clicked = False
-
-# Header with animated title
-st.markdown('<p class="header">🚀 Sentiment Analyzer <span style="font-size:24px"></span></p>',
-            unsafe_allow_html=True)
-st.write("Type text and press Enter or click Analyze")
-
-
-# Sentiment analysis function
-def analyze(text):
-    sentiment = analyzer.polarity_scores(text)
-    compound_score = sentiment['compound']
-
-    if compound_score >= 0.05:
-        return "😊 Positive", compound_score, "positive"
-    elif compound_score <= -0.05:
-        return "😠 Negative", compound_score, "negative"
-    else:
-        return "😐 Neutral", compound_score, "neutral"
-
-
-# Custom animation functions
-def show_neutral_animation():
-    """Floating emojis for neutral sentiment"""
-    cols = st.columns(5)
-    emojis = ["🌫️", "🌀", "🌪️", "💭", "☁️"]
-    for col, emoji in zip(cols, emojis):
-        with col:
-            st.markdown(f'<div class="neutral-emoji" style="font-size: 30px; text-align: center;">{emoji}</div>',
-                        unsafe_allow_html=True)
-
-
-# Create analysis form
-with st.form(key='analysis_form'):
-    user_input = st.text_area(
-        "**Enter your text here:**",
-        height=150,
-        key="text_input",
-        value=st.session_state.input_text,
-        placeholder="Type something like 'I feel okay today'..."
-    )
-
-    # Analyze button
-    col1, col2, col3 = st.columns([1, 2, 1])
-    with col2:
-        analyze_button = st.form_submit_button("🔍 Analyze", use_container_width=True)
-
-# Sample texts in sidebar
-st.sidebar.markdown("### Try these examples:")
-sample_texts = [
-    "I'm not feeling great",
-    "This is absolutely terrible",
-    "It's okay, I guess",
-    "I love this! Amazing work!",
-    "Meh, not bad but not great either"
+examples = [
+    "I absolutely love this product!",
+    "This is the worst experience ever.",
+    "It's okay, nothing special.",
+    "The service was fine but could be better.",
+    "I'm so disappointed right now.",
+    "Today was a good day."
 ]
 
-# Handle example selection
-example_clicked = None
-for text in sample_texts:
-    if st.sidebar.button(text, key=f"btn_{text[:10]}"):
-        example_clicked = text
+choice = st.sidebar.radio("Try an example:", options=examples)
+if "text_input" not in st.session_state:
+    st.session_state.text_input = choice
+if st.sidebar.button("Use this"):
+    st.session_state.text_input = choice
 
-# Update session state if example was clicked
-if example_clicked:
-    st.session_state.input_text = example_clicked
-    st.session_state.analyze_clicked = True
-    st.rerun()
+st.subheader("✍️ Try It Out With Manual Text")
+text_input = st.text_area("Write something here to analyze its sentiment instantly:", value=st.session_state.get("text_input", ""))
 
-# Perform analysis
-if analyze_button or st.session_state.analyze_clicked:
-    st.session_state.analyze_clicked = False
+def get_feeling(sentence):
+    if not isinstance(sentence, str) or not sentence.strip():
+        return pd.Series(["Neutral", 0.0, "neutral"])
+    sentence = sentence.strip()
+    score_1 = sentiment_tool.polarity_scores(sentence)["compound"]
+    score_2 = TextBlob(sentence).sentiment.polarity
+    score = (score_1 + score_2) / 2
+    if score >= 0.6:
+        feeling = "Extremely Positive"
+        label = "positive"
+    elif score >= 0.3:
+        feeling = "Very Positive"
+        label = "positive"
+    elif score >= 0.1:
+        feeling = "Slightly Positive"
+        label = "positive"
+    elif score <= -0.6:
+        feeling = "Extremely Negative"
+        label = "negative"
+    elif score <= -0.3:
+        feeling = "Very Negative"
+        label = "negative"
+    elif score <= -0.1:
+        feeling = "Slightly Negative"
+        label = "negative"
+    else:
+        feeling = "Neutral"
+        label = "neutral"
+    return pd.Series([feeling, score, label])
 
-    if user_input:
-        with st.spinner('Analyzing sentiment...'):
-            time.sleep(0.8)  # Slightly longer for anticipation
-            result, score, sentiment_class = analyze(user_input)
+if text_input:
+    feeling, score, tone = get_feeling(text_input)
+    st.markdown("### 🧠 Sentiment Analysis Result")
+    st.write(f"**Mood:** {feeling}")
+    st.write(f"**Score:** {score:.3f}")
+    st.write(f"**Sentiment Type:** {tone.capitalize()}")
 
-            # Display results
-            st.markdown(f"### Sentiment: <span class='{sentiment_class}'>{result}</span>",
-                        unsafe_allow_html=True)
-            st.write(f"**Sentiment score:** `{score:.3f}` (Range: -1.0 to +1.0)")
+st.subheader("📁 Bulk Analysis With Your Own Dataset")
 
-            # Progress bar
-            normalized_score = (score + 1) / 2
-            st.progress(normalized_score)
+data_file = st.file_uploader("Upload a CSV or JSON file with text entries", type=["csv", "json"])
 
-            # Show appropriate animation
-            if sentiment_class == "positive":
-                st.balloons()
-            elif sentiment_class == "negative":
-                st.snow()
-            else:
-                show_neutral_animation()
+if data_file:
+    try:
+        if data_file.name.endswith('.csv'):
+            records = pd.read_csv(data_file)
+        else:
+            records = pd.read_json(data_file)
 
-            # Additional emoji reaction
-            reaction_placeholder = st.empty()
-            if sentiment_class == "positive":
-                reaction_placeholder.success("✨ Great vibes detected!")
-            elif sentiment_class == "negative":
-                reaction_placeholder.error("💢 Negative emotions noted")
-            else:
-                reaction_placeholder.info("🌫️ Neutral mood observed")
+        st.success("File uploaded successfully! ✅")
+        st.write("Here’s a quick look at your data:", records.head())
+
+        text_column = st.selectbox("Pick the column that has the text to analyze:", records.columns)
+
+        records[text_column] = records[text_column].astype(str).fillna("").apply(str.strip)
+        records = records[records[text_column].str.len() > 3]
+
+        if st.button("🚀 Run Sentiment Analysis"):
+            with st.spinner("Reading emotions..."):
+                records[["Mood", "Sentiment_Score", "Sentiment_Class"]] = records[text_column].apply(get_feeling)
+
+                st.success("Done! Here's what we found:")
+
+                st.subheader("📊 Overall Feelings")
+                summary = records["Sentiment_Class"].value_counts()
+                st.bar_chart(summary)
+
+                st.metric("🏆 Most Common Mood", summary.idxmax().capitalize())
+                st.metric("📈 Average Score", f"{records['Sentiment_Score'].mean():.3f}")
+
+                st.subheader("📋 A Sample of the Results")
+                st.dataframe(records[[text_column, "Mood", "Sentiment_Score", "Sentiment_Class"]].head(10))
+
+                st.subheader("📥 Save Your Results")
+                download = records.to_csv(index=False).encode("utf-8")
+                st.download_button("Download as CSV", download, "sentiment_results.csv", "text/csv")
+
+    except Exception as e:
+        st.error(f"Something went wrong while processing your file: {e}")
