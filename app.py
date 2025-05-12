@@ -30,7 +30,7 @@ if "text_input" not in st.session_state:
 if st.sidebar.button("Use this"):
     st.session_state.text_input = choice
 
-st.subheader("✍️ Try It Out With Manual Text")
+st.subheader("Try It Out With Manual Text")
 text_input = st.text_area("Write something here to analyze its sentiment instantly:", value=st.session_state.get("text_input", ""))
 
 def get_feeling(sentence):
@@ -70,7 +70,7 @@ if text_input:
     st.write(f"**Score:** {score:.3f}")
     st.write(f"**Sentiment Type:** {tone.capitalize()}")
 
-st.subheader(" Bulk Analysis With Your Own Dataset")
+st.subheader("Bulk Analysis With Your Own Dataset")
 
 data_file = st.file_uploader("Upload a CSV or JSON file with text entries", type=["csv", "json"])
 
@@ -89,7 +89,7 @@ if data_file:
         records[text_column] = records[text_column].astype(str).fillna("").apply(str.strip)
         records = records[records[text_column].str.len() > 3]
 
-        if st.button("🚀 Run Sentiment Analysis"):
+        if st.button("Run Sentiment Analysis"):
             with st.spinner("Reading emotions..."):
                 records[["Mood", "Sentiment_Score", "Sentiment_Class"]] = records[text_column].apply(get_feeling)
 
