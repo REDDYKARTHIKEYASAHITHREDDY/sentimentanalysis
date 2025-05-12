@@ -1,2 +1,5 @@
-streamlit==1.27.0
-vaderSentiment==3.3.2
+streamlit
+pandas
+textblob
+vaderSentiment
+matplotlib
