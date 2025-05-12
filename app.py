@@ -4,7 +4,7 @@ from textblob import TextBlob
 from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
 import matplotlib.pyplot as plt
 
-st.set_page_config(page_title="💬 Sentiment Analyzer", layout="wide")
+st.set_page_config(page_title="Sentiment Analyzer", layout="wide")
 
 @st.cache_resource
 def load_sentiment_tool():
@@ -12,11 +12,11 @@ def load_sentiment_tool():
 
 sentiment_tool = load_sentiment_tool()
 
-st.title("💬 Sentiment Analyzer")
+st.title("Sentiment Analyzer")
 st.caption("Understand how your words feel — individually or across entire datasets.")
 
 examples = [
-    "I absolutely love this product!",
+    "I love this product!",
     "This is the worst experience ever.",
     "It's okay, nothing special.",
     "The service was fine but could be better.",
@@ -65,12 +65,12 @@ def get_feeling(sentence):
 
 if text_input:
     feeling, score, tone = get_feeling(text_input)
-    st.markdown("### 🧠 Sentiment Analysis Result")
+    st.markdown("###  Sentiment Analysis Result")
     st.write(f"**Mood:** {feeling}")
     st.write(f"**Score:** {score:.3f}")
     st.write(f"**Sentiment Type:** {tone.capitalize()}")
 
-st.subheader("📁 Bulk Analysis With Your Own Dataset")
+st.subheader(" Bulk Analysis With Your Own Dataset")
 
 data_file = st.file_uploader("Upload a CSV or JSON file with text entries", type=["csv", "json"])
 
@@ -81,7 +81,7 @@ if data_file:
         else:
             records = pd.read_json(data_file)
 
-        st.success("File uploaded successfully! ✅")
+        st.success("File uploaded successfully!")
         st.write("Here’s a quick look at your data:", records.head())
 
         text_column = st.selectbox("Pick the column that has the text to analyze:", records.columns)
@@ -95,17 +95,17 @@ if data_file:
 
                 st.success("Done! Here's what we found:")
 
-                st.subheader("📊 Overall Feelings")
+                st.subheader("Overall Feelings")
                 summary = records["Sentiment_Class"].value_counts()
                 st.bar_chart(summary)
 
-                st.metric("🏆 Most Common Mood", summary.idxmax().capitalize())
-                st.metric("📈 Average Score", f"{records['Sentiment_Score'].mean():.3f}")
+                st.metric(" Most Common Mood", summary.idxmax().capitalize())
+                st.metric("Average Score", f"{records['Sentiment_Score'].mean():.3f}")
 
-                st.subheader("📋 A Sample of the Results")
+                st.subheader(" A Sample of the Results")
                 st.dataframe(records[[text_column, "Mood", "Sentiment_Score", "Sentiment_Class"]].head(10))
 
-                st.subheader("📥 Save Your Results")
+                st.subheader("Save Your Results")
                 download = records.to_csv(index=False).encode("utf-8")
                 st.download_button("Download as CSV", download, "sentiment_results.csv", "text/csv")
 
